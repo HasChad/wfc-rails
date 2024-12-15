@@ -1,9 +1,22 @@
 use ::rand::{seq::SliceRandom, thread_rng, Rng};
 use macroquad::prelude::*;
+use std::collections::HashMap;
 
-const ROW: f32 = 9.;
-const COLUMN: f32 = 16.;
+const ROW: usize = 2;
+const COLUMN: usize = 2;
 const TEXTURE_SIZE: f32 = 64.;
+const GRID_SIZE: usize = ROW * COLUMN;
+const TEXTURE_PARAM: macroquad::texture::DrawTextureParams = DrawTextureParams {
+    dest_size: Some(Vec2 {
+        x: TEXTURE_SIZE,
+        y: TEXTURE_SIZE,
+    }),
+    source: None,
+    rotation: 0.,
+    flip_x: false,
+    flip_y: false,
+    pivot: None,
+};
 
 /*
 
@@ -22,7 +35,8 @@ const TEXTURE_SIZE: f32 = 64.;
 #[derive(Clone, PartialEq)]
 struct Cell {
     is_collapsed: bool,
-    tile: i16,
+    tile: i32,
+    edges: Vec<i32>,
     tile_options: Vec<u8>,
 }
 
@@ -30,10 +44,9 @@ fn window_conf() -> Conf {
     Conf {
         window_title: "WFC-Rails".into(),
         icon: None,
-        window_width: (COLUMN * TEXTURE_SIZE) as i32,
-        window_height: (ROW * TEXTURE_SIZE) as i32,
+        window_width: COLUMN as i32 * TEXTURE_SIZE as i32,
+        window_height: ROW as i32 * TEXTURE_SIZE as i32,
         window_resizable: false,
-
         ..Default::default()
     }
 }
@@ -44,44 +57,65 @@ async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
 
-    //load rails
-    let rail_h = load_texture("rail_h.png").await.unwrap();
-    let rail_v = load_texture("rail_v.png").await.unwrap();
-    let rail_ld = load_texture("rail_ld.png").await.unwrap();
-    let rail_lu = load_texture("rail_lu.png").await.unwrap();
-    let rail_rd = load_texture("rail_rd.png").await.unwrap();
-    let rail_ru = load_texture("rail_ru.png").await.unwrap();
+    //load rail texture
+    let rail_h_texture = load_texture("rail_h.png").await.unwrap();
+    let rail_v_texture = load_texture("rail_v.png").await.unwrap();
+    let rail_ld_texture = load_texture("rail_ld.png").await.unwrap();
+    let rail_lu_texture = load_texture("rail_lu.png").await.unwrap();
+    let rail_rd_texture = load_texture("rail_rd.png").await.unwrap();
+    let rail_ru_texture = load_texture("rail_ru.png").await.unwrap();
 
-    let texture_param = DrawTextureParams {
-        dest_size: Some(Vec2 {
-            x: TEXTURE_SIZE,
-            y: TEXTURE_SIZE,
-        }),
-        source: None,
-        rotation: 0.,
-        flip_x: false,
-        flip_y: false,
-        pivot: None,
-    };
+    let mut cells: HashMap<usize, Vec<i32>> = HashMap::new();
+
+    cells.insert(1, vec![0, 1, 0, 1]);
+    cells.insert(2, vec![1, 0, 1, 0]);
+    cells.insert(3, vec![0, 0, 1, 1]);
+    cells.insert(4, vec![1, 0, 0, 1]);
+    cells.insert(5, vec![0, 1, 1, 0]);
+    cells.insert(6, vec![1, 1, 0, 0]);
 
     let mut grid = vec![
         Cell {
             is_collapsed: false,
             tile: -1,
+            edges: vec![0, 0, 0, 0],
             tile_options: vec![0, 1, 2, 3, 4, 5, 6]
         };
-        (ROW * COLUMN) as usize
+        GRID_SIZE
     ];
 
-    //rand::gen_range(low, high);
-    let mut choosen_cell =
-        rng.gen_range(COLUMN as usize..=(ROW * COLUMN) as usize - COLUMN as usize);
-    grid[choosen_cell].is_collapsed = true;
-    grid[choosen_cell].tile = rng.gen_range(1..=6);
-    grid[choosen_cell].tile_options = vec![grid[choosen_cell].tile as u8];
+    grid[0] = Cell {
+        is_collapsed: true,
+        tile: 1,
+        edges: vec![0, 1, 0, 1],
+        tile_options: vec![],
+    };
+
+    if grid[0].edges[1] == 1 {
+        let collection = {
+            let mut damn: Vec<&usize> = vec![];
+            for (num, item) in cells.iter() {
+                if item[3] == 1 {
+                    damn.push(num);
+                }
+            }
+            damn
+        };
+
+        grid[1].tile = **collection.choose(&mut rng).unwrap() as i32;
+    }
+
+    /*
+        let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
+
+        grid[choosen_cell].is_collapsed = true;
+        grid[choosen_cell].tile = rng.gen_range(1..=6);
+        grid[choosen_cell].tile_options = vec![grid[choosen_cell].tile as u8];
+    */
 
     loop {
         //update world
+        /*
         if is_key_pressed(KeyCode::A) {
             grid = vec![
                 Cell {
@@ -89,99 +123,34 @@ async fn main() {
                     tile: -1,
                     tile_options: vec![0, 1, 2, 3, 4, 5, 6]
                 };
-                (ROW * COLUMN) as usize
+                GRID_SIZE
             ];
 
-            choosen_cell = rand::gen_range(0, (ROW * COLUMN) as usize);
+            choosen_cell = rand::gen_range(0, GRID_SIZE);
             info!("choosen cell = {}", choosen_cell);
 
             grid[choosen_cell].is_collapsed = true;
             grid[choosen_cell].tile = rng.gen_range(1..=6);
             grid[choosen_cell].tile_options = vec![grid[choosen_cell].tile as u8];
         }
+        */
 
-        //grid.iter().any(|el| !el.is_collapsed)
         // ! MARK: WFC
-        for _ in 0..100 {
-            let mut shortest_option = 7;
-            let mut index = 50;
-
-            for (grid_index, grid_tile) in grid.iter().enumerate() {
-                if grid_tile.tile_options.len() < shortest_option {
-                    shortest_option = grid_tile.tile_options.len();
-                    index = grid_index;
-                }
-            }
-            info!("shortest index {}", index);
-
-            let north = index - COLUMN as usize;
-            let south = index + COLUMN as usize;
-            let east = index + 1_usize;
-            let west = index - 1_usize;
-
-            if grid[north].tile == 2
-                || grid[north].tile == 3
-                || grid[north].tile == 5
-                || grid[south].tile == 2
-                || grid[south].tile == 3
-                || grid[south].tile == 5
-                || grid[west].tile == 2
-                || grid[west].tile == 3
-                || grid[west].tile == 5
-                || grid[east].tile == 2
-                || grid[east].tile == 3
-                || grid[east].tile == 5
-            {
-                grid[index].tile_options.retain(|&a| a != 0);
-                grid[index].tile_options.retain(|&a| a != 4);
-                grid[index].tile_options.retain(|&a| a != 1);
-                grid[index].tile_options.retain(|&a| a != 6);
-            } else if grid[north].tile == 1
-                || grid[north].tile == 4
-                || grid[north].tile == 6
-                || grid[south].tile == 1
-                || grid[south].tile == 4
-                || grid[south].tile == 6
-                || grid[west].tile == 1
-                || grid[west].tile == 4
-                || grid[west].tile == 6
-                || grid[east].tile == 1
-                || grid[east].tile == 4
-                || grid[east].tile == 6
-            {
-                grid[index].tile_options.retain(|&a| a != 0);
-                grid[index].tile_options.retain(|&a| a != 2);
-                grid[index].tile_options.retain(|&a| a != 3);
-                grid[index].tile_options.retain(|&a| a != 5);
-            }
-
-            //info!("index vec = {:?}", grid[index].tile_options);
-            grid[index].tile_options.choose(&mut rng);
-            grid[index].is_collapsed = true;
-            grid[index].tile = grid[index].tile_options[0] as i16;
-        }
 
         // ! MARK: draw world
         for (index, cell) in grid.iter().enumerate() {
-            let x = (index as f32 % COLUMN) * TEXTURE_SIZE;
-            let y = (index / COLUMN as usize) as f32 * TEXTURE_SIZE;
+            let x = (index % COLUMN) as f32 * TEXTURE_SIZE;
+            let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
 
             match cell.tile {
-                -1 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
-                0 => draw_rectangle(
-                    x,
-                    y,
-                    TEXTURE_SIZE,
-                    TEXTURE_SIZE,
-                    Color::from_rgba(81, 162, 0, 255),
-                ),
-                1 => draw_texture_ex(&rail_h, x, y, WHITE, texture_param.clone()),
-                2 => draw_texture_ex(&rail_v, x, y, WHITE, texture_param.clone()),
-                3 => draw_texture_ex(&rail_ld, x, y, WHITE, texture_param.clone()),
-                4 => draw_texture_ex(&rail_lu, x, y, WHITE, texture_param.clone()),
-                5 => draw_texture_ex(&rail_rd, x, y, WHITE, texture_param.clone()),
-                6 => draw_texture_ex(&rail_ru, x, y, WHITE, texture_param.clone()),
-                _ => (),
+                0 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, BLACK),
+                1 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
+                2 => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
+                3 => draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM),
+                4 => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
+                5 => draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM),
+                6 => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
+                _ => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
             }
         }
         next_frame().await;
