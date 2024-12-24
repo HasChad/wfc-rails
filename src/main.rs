@@ -1,4 +1,4 @@
-use ::rand::{seq::SliceRandom, thread_rng, Rng};
+use ::rand::{seq::SliceRandom, thread_rng};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
@@ -6,7 +6,7 @@ const ROW: usize = 2;
 const COLUMN: usize = 2;
 const TEXTURE_SIZE: f32 = 64.;
 const GRID_SIZE: usize = ROW * COLUMN;
-const TEXTURE_PARAM: macroquad::texture::DrawTextureParams = DrawTextureParams {
+const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
     dest_size: Some(Vec2 {
         x: TEXTURE_SIZE,
         y: TEXTURE_SIZE,
@@ -17,20 +17,10 @@ const TEXTURE_PARAM: macroquad::texture::DrawTextureParams = DrawTextureParams {
     flip_y: false,
     pivot: None,
 };
-
-/*
-
-- Tüm celleri -1 olan vector yap
-`grid = cell {tile, is_collapsed, tile_options}`
-- Rastgele choosen_cell ve tile seç
-- choosen_cell collapse at ve komşu cell lere operasyon yap
->Loop: if grid contains -1
-- grid içinde en az tile_options a sahip olan cell i bul
-  - if grid
-- cell içinde rastgele tile seç ve collapse at
-- Komşu cell lere operasyon yap
-
-*/
+const TOP: usize = 0;
+const RIGHT: usize = 1;
+const BOTTOM: usize = 2;
+const LEFT: usize = 3;
 
 #[derive(Clone, PartialEq)]
 struct Cell {
@@ -91,14 +81,16 @@ async fn main() {
         tile_options: vec![],
     };
 
-    if grid[0].edges[1] == 1 {
+    if grid[0].edges[RIGHT] == 1 {
         let collection = {
             let mut damn: Vec<&usize> = vec![];
+
             for (num, item) in cells.iter() {
-                if item[3] == 1 {
+                if item[LEFT] == 1 {
                     damn.push(num);
                 }
             }
+
             damn
         };
 
@@ -114,7 +106,6 @@ async fn main() {
     */
 
     loop {
-        //update world
         /*
         if is_key_pressed(KeyCode::A) {
             grid = vec![
