@@ -23,11 +23,15 @@ const BOTTOM: usize = 2;
 const LEFT: usize = 3;
 
 #[derive(Clone, PartialEq)]
+enum Tile {
+    Options(Vec<i32>),
+    Collapsed(Cell),
+}
+
+#[derive(Clone, PartialEq)]
 struct Cell {
-    is_collapsed: bool,
     tile: i32,
     edges: Vec<i32>,
-    tile_options: Vec<u8>,
 }
 
 fn window_conf() -> Conf {
@@ -47,7 +51,7 @@ async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
 
-    //load rail texture
+    // load rail texture
     let rail_h_texture = load_texture("rail_h.png").await.unwrap();
     let rail_v_texture = load_texture("rail_v.png").await.unwrap();
     let rail_ld_texture = load_texture("rail_ld.png").await.unwrap();
@@ -55,8 +59,8 @@ async fn main() {
     let rail_rd_texture = load_texture("rail_rd.png").await.unwrap();
     let rail_ru_texture = load_texture("rail_ru.png").await.unwrap();
 
+    // create tiles and edges
     let mut cells: HashMap<usize, Vec<i32>> = HashMap::new();
-
     cells.insert(1, vec![0, 1, 0, 1]);
     cells.insert(2, vec![1, 0, 1, 0]);
     cells.insert(3, vec![0, 0, 1, 1]);
@@ -64,37 +68,46 @@ async fn main() {
     cells.insert(5, vec![0, 1, 1, 0]);
     cells.insert(6, vec![1, 1, 0, 0]);
 
-    let mut grid = vec![
-        Cell {
-            is_collapsed: false,
-            tile: -1,
-            edges: vec![0, 0, 0, 0],
-            tile_options: vec![0, 1, 2, 3, 4, 5, 6]
-        };
-        GRID_SIZE
-    ];
+    // create tile grid
+    let mut grid = vec![Tile::Options(vec![1, 2, 3, 4, 5, 6]); GRID_SIZE];
 
-    grid[0] = Cell {
-        is_collapsed: true,
+    // ! prototype
+    grid[0] = Tile::Collapsed(Cell {
         tile: 1,
         edges: vec![0, 1, 0, 1],
-        tile_options: vec![],
-    };
+    });
 
-    if grid[0].edges[RIGHT] == 1 {
-        let collection = {
-            let mut damn: Vec<&usize> = vec![];
+    match &grid[0] {
+        Tile::Options(options) => {
+            let choosen: usize = *options.choose(&mut rng).unwrap() as usize;
 
-            for (num, item) in cells.iter() {
-                if item[LEFT] == 1 {
-                    damn.push(num);
-                }
+            grid[0] = Tile::Collapsed(Cell {
+                tile: choosen as i32,
+                edges: cells[&choosen].clone(),
+            });
+        }
+        Tile::Collapsed(cell) => {
+            if cell.edges[RIGHT] == 1 {
+                let collection = {
+                    let mut damn: Vec<&usize> = vec![];
+
+                    for (num, item) in cells.iter() {
+                        if item[LEFT] == 1 {
+                            damn.push(num);
+                        }
+                    }
+
+                    damn
+                };
+
+                let choosen = **collection.choose(&mut rng).unwrap() as usize;
+
+                grid[1] = Tile::Collapsed(Cell {
+                    tile: choosen as i32,
+                    edges: cells[&choosen].clone(),
+                });
             }
-
-            damn
-        };
-
-        grid[1].tile = **collection.choose(&mut rng).unwrap() as i32;
+        }
     }
 
     /*
@@ -133,15 +146,18 @@ async fn main() {
             let x = (index % COLUMN) as f32 * TEXTURE_SIZE;
             let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
 
-            match cell.tile {
-                0 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, BLACK),
-                1 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
-                2 => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
-                3 => draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM),
-                4 => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
-                5 => draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM),
-                6 => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
-                _ => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
+            match cell {
+                Tile::Options(_) => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
+                Tile::Collapsed(cell) => match cell.tile {
+                    0 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, BLACK),
+                    1 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
+                    2 => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
+                    3 => draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM),
+                    4 => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
+                    5 => draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM),
+                    6 => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
+                    _ => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
+                },
             }
         }
         next_frame().await;
