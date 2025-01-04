@@ -1,12 +1,15 @@
-use ::rand::{seq::SliceRandom, thread_rng};
+use ::rand::{seq::SliceRandom, thread_rng, Rng};
 use macroquad::prelude::*;
 use std::collections::HashMap;
-use std::iter::Iterator;
 
-const ROW: usize = 5;
-const COLUMN: usize = 5;
+const ROW: usize = 3;
+const COLUMN: usize = 3;
 const TEXTURE_SIZE: f32 = 64.;
 const GRID_SIZE: usize = ROW * COLUMN;
+const TOP: usize = 0;
+const RIGHT: usize = 1;
+const BOTTOM: usize = 2;
+const LEFT: usize = 3;
 const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
     dest_size: Some(Vec2 {
         x: TEXTURE_SIZE,
@@ -18,10 +21,6 @@ const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
     flip_y: false,
     pivot: None,
 };
-const TOP: usize = 0;
-const RIGHT: usize = 1;
-const BOTTOM: usize = 2;
-const LEFT: usize = 3;
 
 #[derive(Clone, PartialEq)]
 enum Tile {
@@ -73,80 +72,37 @@ async fn main() {
     // create grid
     let mut grid = vec![Tile::Options(vec![0, 1, 2, 3, 4, 5, 6]); GRID_SIZE];
 
-    // ! prototype
-    grid[0] = Tile::Collapsed(Cell {
-        tile: 1,
-        edges: vec![0, 1, 0, 1],
+    let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
+    grid[choosen_cell] = Tile::Collapsed(Cell {
+        tile: 0,
+        edges: vec![0, 0, 0, 0],
     });
 
-    /*
-    match &grid[0] {
-        Tile::Options(options) => {
-            let choosen: usize = *options.choose(&mut rng).unwrap() as usize;
-
-            grid[0] = Tile::Collapsed(Cell {
-                tile: choosen as i32,
-                edges: cells[&choosen].clone(),
-            });
-        }
-        Tile::Collapsed(cell) => {
-            if cell.edges[RIGHT] == 1 {
-                let collection: Vec<_> = cells
-                    .iter()
-                    .filter(|(_, value)| value[LEFT] == 1)
-                    .map(|(key, _)| key)
-                    .collect();
-
-                let choosen = **collection.choose(&mut rng).unwrap() as usize;
-
-                grid[1] = Tile::Collapsed(Cell {
-                    tile: choosen as i32,
-                    edges: cells[&choosen].clone(),
-                });
-            }
-        }
-    }
-    */
-
-    /*
-        let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
-
-        grid[choosen_cell].is_collapsed = true;
-        grid[choosen_cell].tile = rng.gen_range(1..=6);
-        grid[choosen_cell].tile_options = vec![grid[choosen_cell].tile as u8];
-    */
-
     loop {
+        // ! MARK: FPS limiter
         /*
-        let minimum_frame_time = 1. / 1.; // 60 FPS
+        let minimum_frame_time = 1. / 60.; // 60 FPS
         let frame_time = get_frame_time();
         println!("Frame time: {}ms", frame_time * 1000.);
         if frame_time < minimum_frame_time {
             let time_to_sleep = (minimum_frame_time - frame_time) * 1000.;
             println!("Sleep for {}ms", time_to_sleep);
             std::thread::sleep(std::time::Duration::from_millis(time_to_sleep as u64));
-
         }
         */
-        /*
+
+        // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
-            grid = vec![
-                Cell {
-                    is_collapsed: false,
-                    tile: -1,
-                    tile_options: vec![0, 1, 2, 3, 4, 5, 6]
-                };
-                GRID_SIZE
-            ];
+            // reset grid
+            grid = vec![Tile::Options(vec![0, 1, 2, 3, 4, 5, 6]); GRID_SIZE];
 
-            choosen_cell = rand::gen_range(0, GRID_SIZE);
-            info!("choosen cell = {}", choosen_cell);
-
-            grid[choosen_cell].is_collapsed = true;
-            grid[choosen_cell].tile = rng.gen_range(1..=6);
-            grid[choosen_cell].tile_options = vec![grid[choosen_cell].tile as u8];
+            choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
+            grid[choosen_cell] = Tile::Collapsed(Cell {
+                tile: 0,
+                edges: vec![0, 0, 0, 0],
+            });
         }
-        */
+
         // ! MARK: First WFC
         for y in 0..ROW {
             'row: for x in 0..COLUMN {
@@ -164,16 +120,11 @@ async fn main() {
                                     .map(|(key, _)| key)
                                     .collect();
 
-                                //info!("{:?}", options);
-                                // info!("{:?}", collection);
-
                                 let matching: Vec<_> = collection
                                     .into_iter()
                                     .filter(|item| options.contains(&(*item as i32)))
                                     .map(|key| key as i32)
                                     .collect();
-
-                                // info!("{:?}", matching);
 
                                 grid[current_tile + 1] = Tile::Options(matching);
                             } else {
@@ -195,7 +146,7 @@ async fn main() {
                         }
                     }
 
-                    //check left
+                    // check left
                     if x != 0 {
                         if let Tile::Options(options) = &grid[current_tile - 1] {
                             if cell.edges[LEFT] == 1 {
@@ -232,7 +183,7 @@ async fn main() {
                         }
                     }
 
-                    //check top
+                    // check top
                     if y != 0 {
                         if let Tile::Options(options) = &grid[current_tile - COLUMN] {
                             if cell.edges[TOP] == 1 {
@@ -269,7 +220,7 @@ async fn main() {
                         }
                     }
 
-                    //check bottom
+                    // check bottom
                     if y != ROW - 1 {
                         if let Tile::Options(options) = &grid[current_tile + COLUMN] {
                             if cell.edges[BOTTOM] == 1 {
@@ -311,7 +262,7 @@ async fn main() {
             }
         }
 
-        // ! MARK: Check for least option ones
+        // ! MARK: Check for least option one
         let mut least_one = 0;
         let mut least_num = 100;
         for (num, tile) in grid.iter().enumerate() {
@@ -336,81 +287,7 @@ async fn main() {
             });
         }
 
-        /*
-        for y in 0..ROW {
-            'row: for x in 0..COLUMN {
-                let current_tile = (y * COLUMN) + x;
-
-                if let Tile::Collapsed(_) = &grid[current_tile] {
-                    continue 'row;
-                }
-
-                if x != 0 {
-                    if let Tile::Collapsed(cell) = &grid[current_tile - 1] {
-                        if cell.edges[RIGHT] == 1 {
-                            let collection: Vec<_> = cells
-                                .iter()
-                                .filter(|(_, value)| value[LEFT] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let choosen = **collection.choose(&mut rng).unwrap() as usize;
-
-                            grid[current_tile] = Tile::Collapsed(Cell {
-                                tile: choosen as i32,
-                                edges: cells[&choosen].clone(),
-                            });
-                        } else {
-                            let collection: Vec<_> = cells
-                                .iter()
-                                .filter(|(_, value)| value[LEFT] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let choosen = **collection.choose(&mut rng).unwrap() as usize;
-
-                            grid[current_tile] = Tile::Collapsed(Cell {
-                                tile: choosen as i32,
-                                edges: cells[&choosen].clone(),
-                            });
-                        }
-                    }
-                } else if y != 0 {
-                    if let Tile::Collapsed(cell) = &grid[current_tile - COLUMN] {
-                        if cell.edges[BOTTOM] == 1 {
-                            let collection: Vec<_> = cells
-                                .iter()
-                                .filter(|(_, value)| value[TOP] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let choosen = **collection.choose(&mut rng).unwrap() as usize;
-
-                            grid[current_tile] = Tile::Collapsed(Cell {
-                                tile: choosen as i32,
-                                edges: cells[&choosen].clone(),
-                            });
-                        } else {
-                            let collection: Vec<_> = cells
-                                .iter()
-                                .filter(|(_, value)| value[TOP] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let choosen = **collection.choose(&mut rng).unwrap() as usize;
-
-                            grid[current_tile] = Tile::Collapsed(Cell {
-                                tile: choosen as i32,
-                                edges: cells[&choosen].clone(),
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        */
-
-        // ! MARK: draw world
+        // ! MARK: Draw world
         for (index, cell) in grid.iter().enumerate() {
             let x = (index % COLUMN) as f32 * TEXTURE_SIZE;
             let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
