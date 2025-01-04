@@ -85,13 +85,13 @@ async fn main() {
     let tile_options = vec![
         0, //empty
         1, //vertical
-        2, //horizontal
+        //2, //horizontal
         //3,  //ld
         4, //lu
-        5, //rd
+        //5, //rd
         //6, //ru
         7,  //lrd1
-        8,  //lrd2
+        //8,  //lrd2
         9,  //lru1
         10, //lru2
         11, //all
@@ -303,12 +303,16 @@ async fn main() {
 
         // ! MARK: Second WFC
         if let Tile::Options(options) = &grid[least_one] {
-            let choosen = *options.choose(&mut rng).unwrap() as usize;
+            if let Some(damn) = options.choose(&mut rng) {
+                let choosen = *damn as usize;
 
-            grid[least_one] = Tile::Collapsed(Cell {
-                tile: choosen as i32,
-                edges: cells[&choosen].clone(),
-            });
+                grid[least_one] = Tile::Collapsed(Cell {
+                    tile: choosen as i32,
+                    edges: cells[&choosen].clone(),
+                });
+            } else {
+                grid[least_one] = Tile::Options(tile_options.clone())
+            }
         }
 
         // ! MARK: Draw world
