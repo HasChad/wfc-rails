@@ -2,8 +2,8 @@ use ::rand::{seq::SliceRandom, thread_rng, Rng};
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
-const ROW: usize = 3;
-const COLUMN: usize = 3;
+const ROW: usize = 10;
+const COLUMN: usize = 15;
 const TEXTURE_SIZE: f32 = 64.;
 const GRID_SIZE: usize = ROW * COLUMN;
 const TOP: usize = 0;
@@ -58,6 +58,12 @@ async fn main() {
     let rail_lu_texture = load_texture("rail_lu.png").await.unwrap();
     let rail_rd_texture = load_texture("rail_rd.png").await.unwrap();
     let rail_ru_texture = load_texture("rail_ru.png").await.unwrap();
+    //
+    let rail_lrd1_texture = load_texture("rail_lrd1.png").await.unwrap();
+    let rail_lrd2_texture = load_texture("rail_lrd2.png").await.unwrap();
+    let rail_lru1_texture = load_texture("rail_lru1.png").await.unwrap();
+    let rail_lru2_texture = load_texture("rail_lru2.png").await.unwrap();
+    let rail_all_texture = load_texture("rail_all.png").await.unwrap();
 
     // create tiles and edges
     let mut cells: HashMap<usize, Vec<i32>> = HashMap::new();
@@ -68,9 +74,29 @@ async fn main() {
     cells.insert(4, vec![1, 0, 0, 1]);
     cells.insert(5, vec![0, 1, 1, 0]);
     cells.insert(6, vec![1, 1, 0, 0]);
+    //
+    cells.insert(7, vec![0, 1, 1, 1]);
+    cells.insert(8, vec![0, 1, 1, 1]);
+    cells.insert(9, vec![1, 1, 0, 1]);
+    cells.insert(10, vec![1, 1, 0, 1]);
+    cells.insert(11, vec![1, 1, 1, 1]);
 
     // create grid
-    let mut grid = vec![Tile::Options(vec![0, 1, 2, 3, 4, 5, 6]); GRID_SIZE];
+    let tile_options = vec![
+        0, //empty
+        1, //vertical
+        2, //horizontal
+        //3,  //ld
+        4, //lu
+        5, //rd
+        //6, //ru
+        7,  //lrd1
+        8,  //lrd2
+        9,  //lru1
+        10, //lru2
+        11, //all
+    ];
+    let mut grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
 
     let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
     grid[choosen_cell] = Tile::Collapsed(Cell {
@@ -81,12 +107,10 @@ async fn main() {
     loop {
         // ! MARK: FPS limiter
         /*
-        let minimum_frame_time = 1. / 60.; // 60 FPS
+        let minimum_frame_time = 1. / 5.; // 60 FPS
         let frame_time = get_frame_time();
-        println!("Frame time: {}ms", frame_time * 1000.);
         if frame_time < minimum_frame_time {
             let time_to_sleep = (minimum_frame_time - frame_time) * 1000.;
-            println!("Sleep for {}ms", time_to_sleep);
             std::thread::sleep(std::time::Duration::from_millis(time_to_sleep as u64));
         }
         */
@@ -94,7 +118,7 @@ async fn main() {
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
             // reset grid
-            grid = vec![Tile::Options(vec![0, 1, 2, 3, 4, 5, 6]); GRID_SIZE];
+            grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
 
             choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
             grid[choosen_cell] = Tile::Collapsed(Cell {
@@ -293,7 +317,18 @@ async fn main() {
             let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
 
             match cell {
-                Tile::Options(_) => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
+                Tile::Options(_) => draw_rectangle(
+                    x,
+                    y,
+                    TEXTURE_SIZE,
+                    TEXTURE_SIZE,
+                    Color {
+                        r: 0.33,
+                        g: 0.32,
+                        b: 0.49,
+                        a: 1.,
+                    },
+                ),
                 Tile::Collapsed(cell) => match cell.tile {
                     0 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, BLACK),
                     1 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
@@ -302,6 +337,12 @@ async fn main() {
                     4 => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
                     5 => draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM),
                     6 => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
+                    //
+                    7 => draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, TEXTURE_PARAM),
+                    8 => draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, TEXTURE_PARAM),
+                    9 => draw_texture_ex(&rail_lru1_texture, x, y, WHITE, TEXTURE_PARAM),
+                    10 => draw_texture_ex(&rail_lru2_texture, x, y, WHITE, TEXTURE_PARAM),
+                    11 => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
                     _ => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
                 },
             }
