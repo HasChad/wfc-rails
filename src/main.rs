@@ -55,7 +55,10 @@ async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
 
-    // load rail texture
+    // load rail textures
+    let empty_texture = load_texture("empty.png").await.unwrap();
+    let uc_sign_texture = load_texture("under_cons.png").await.unwrap();
+    //
     let rail_all_texture = load_texture("rail_all.png").await.unwrap();
     let rail_h_texture = load_texture("rail_h.png").await.unwrap();
     let rail_v_texture = load_texture("rail_v.png").await.unwrap();
@@ -87,23 +90,25 @@ async fn main() {
 
     // create options
     let tile_options = vec![
-        0,  //empty
-        1,  //all
-        2,  //vertical
-        3,  //horizontal
-        4,  //ld
-        5,  //lu
-        6,  //rd
-        7,  //ru
-        8,  //lrd1
-        9,  //lrd2
-        10, //lru1
-        11, //lru2
+        0, //empty
+        1, //all
+        2, //vertical
+        3, //horizontal
+        4, //ld
+        5, //lu
+        6, //rd
+        7, //ru
+           //
+           //8,  //lrd1
+           //9,  //lrd2
+           //10, //lru1
+           //11, //lru2
     ];
 
     // create grid
     let mut grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
 
+    // choose random tile for start
     let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
     let mut choosen_cell_tile = *tile_options.choose(&mut rng).unwrap() as usize;
 
@@ -125,7 +130,6 @@ async fn main() {
 
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
-            // reset grid
             grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
 
             choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
@@ -137,7 +141,7 @@ async fn main() {
             });
         }
 
-        // ! MARK: WFC Part 1
+        // ! MARK: WFC Part 1: Wave
         wave_funtion(&mut grid, &cells);
 
         // ! MARK: Check for least option one
@@ -156,7 +160,7 @@ async fn main() {
             }
         }
 
-        // ! MARK: WFC Part 2
+        // ! MARK: WFC Part 2: Collapse
         if let Tile::Options(options) = &grid[least_one] {
             if let Some(damn) = options.choose(&mut rng) {
                 let choosen = *damn as usize;
@@ -176,20 +180,9 @@ async fn main() {
             let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
 
             match cell {
-                Tile::Options(_) => draw_rectangle(
-                    x,
-                    y,
-                    TEXTURE_SIZE,
-                    TEXTURE_SIZE,
-                    Color {
-                        r: 0.33,
-                        g: 0.32,
-                        b: 0.49,
-                        a: 1.,
-                    },
-                ),
+                Tile::Options(_) => draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM),
                 Tile::Collapsed(cell) => match cell.tile {
-                    0 => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, BLACK),
+                    0 => draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM),
                     1 => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
                     2 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
                     3 => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
