@@ -14,6 +14,7 @@ const TOP: usize = 0;
 const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
 const LEFT: usize = 3;
+const EDGE_COUNT: i32 = 2;
 const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
     dest_size: Some(Vec2 {
         x: TEXTURE_SIZE,

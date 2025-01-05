@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Tile, BOTTOM, COLUMN, LEFT, RIGHT, ROW, TOP};
+use crate::{Tile, BOTTOM, COLUMN, EDGE_COUNT, LEFT, RIGHT, ROW, TOP};
 
 pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
     for y in 0..ROW {
@@ -10,148 +10,96 @@ pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
             if let Tile::Collapsed(cell) = grid[current_tile].clone() {
                 // ! MARK: check right
                 if x != COLUMN - 1 {
-                    if let Tile::Options(options) = &grid[current_tile + 1] {
-                        if cell.edges[RIGHT] == 1 {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[LEFT] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
+                    if let Tile::Options(options) = grid[current_tile + 1].clone() {
+                        for edge_count in 0..EDGE_COUNT {
+                            if cell.edges[RIGHT] == edge_count {
+                                let collection: Vec<_> = cells
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(_, value)| value[LEFT] == edge_count)
+                                    .map(|(key, _)| key)
+                                    .collect();
 
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
+                                let matching: Vec<_> = collection
+                                    .into_iter()
+                                    .filter(|item| options.contains(&(*item as i32)))
+                                    .map(|key| key as i32)
+                                    .collect();
 
-                            grid[current_tile + 1] = Tile::Options(matching);
-                        } else {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[LEFT] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
-
-                            grid[current_tile + 1] = Tile::Options(matching);
+                                grid[current_tile + 1] = Tile::Options(matching);
+                            }
                         }
                     }
                 }
 
                 // ! MARK: check left
                 if x != 0 {
-                    if let Tile::Options(options) = &grid[current_tile - 1] {
-                        if cell.edges[LEFT] == 1 {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[RIGHT] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
+                    if let Tile::Options(options) = grid[current_tile - 1].clone() {
+                        for edge_count in 0..EDGE_COUNT {
+                            if cell.edges[LEFT] == edge_count {
+                                let collection: Vec<_> = cells
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(_, value)| value[RIGHT] == edge_count)
+                                    .map(|(key, _)| key)
+                                    .collect();
 
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
+                                let matching: Vec<_> = collection
+                                    .into_iter()
+                                    .filter(|item| options.contains(&(*item as i32)))
+                                    .map(|key| key as i32)
+                                    .collect();
 
-                            grid[current_tile - 1] = Tile::Options(matching);
-                        } else {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[RIGHT] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
-
-                            grid[current_tile - 1] = Tile::Options(matching);
+                                grid[current_tile - 1] = Tile::Options(matching);
+                            }
                         }
                     }
                 }
 
                 // ! MARK: check top
                 if y != 0 {
-                    if let Tile::Options(options) = &grid[current_tile - COLUMN] {
-                        if cell.edges[TOP] == 1 {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[BOTTOM] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
+                    if let Tile::Options(options) = grid[current_tile - COLUMN].clone() {
+                        for edge_count in 0..EDGE_COUNT {
+                            if cell.edges[TOP] == edge_count {
+                                let collection: Vec<_> = cells
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(_, value)| value[BOTTOM] == edge_count)
+                                    .map(|(key, _)| key)
+                                    .collect();
 
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
+                                let matching: Vec<_> = collection
+                                    .into_iter()
+                                    .filter(|item| options.contains(&(*item as i32)))
+                                    .map(|key| key as i32)
+                                    .collect();
 
-                            grid[current_tile - COLUMN] = Tile::Options(matching);
-                        } else {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[BOTTOM] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
-
-                            grid[current_tile - COLUMN] = Tile::Options(matching);
+                                grid[current_tile - COLUMN] = Tile::Options(matching);
+                            }
                         }
                     }
                 }
 
                 // ! MARK: check bottom
                 if y != ROW - 1 {
-                    if let Tile::Options(options) = &grid[current_tile + COLUMN] {
-                        if cell.edges[BOTTOM] == 1 {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[TOP] == 1)
-                                .map(|(key, _)| key)
-                                .collect();
+                    if let Tile::Options(options) = grid[current_tile + COLUMN].clone() {
+                        for edge_count in 0..EDGE_COUNT {
+                            if cell.edges[BOTTOM] == edge_count {
+                                let collection: Vec<_> = cells
+                                    .clone()
+                                    .into_iter()
+                                    .filter(|(_, value)| value[TOP] == edge_count)
+                                    .map(|(key, _)| key)
+                                    .collect();
 
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
+                                let matching: Vec<_> = collection
+                                    .into_iter()
+                                    .filter(|item| options.contains(&(*item as i32)))
+                                    .map(|key| key as i32)
+                                    .collect();
 
-                            grid[current_tile + COLUMN] = Tile::Options(matching);
-                        } else {
-                            let collection: Vec<_> = cells
-                                .clone()
-                                .into_iter()
-                                .filter(|(_, value)| value[TOP] == 0)
-                                .map(|(key, _)| key)
-                                .collect();
-
-                            let matching: Vec<_> = collection
-                                .into_iter()
-                                .filter(|item| options.contains(&(*item as i32)))
-                                .map(|key| key as i32)
-                                .collect();
-
-                            grid[current_tile + COLUMN] = Tile::Options(matching);
+                                grid[current_tile + COLUMN] = Tile::Options(matching);
+                            }
                         }
                     }
                 }
