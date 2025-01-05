@@ -1,5 +1,8 @@
 use ::rand::{seq::SliceRandom, thread_rng, Rng};
-use macroquad::prelude::*;
+use macroquad::{
+    prelude::*,
+    ui::{hash, root_ui, widgets},
+};
 use std::collections::HashMap;
 
 mod wfc_functions;
@@ -129,6 +132,15 @@ async fn main() {
         }
         */
 
+        // ! MARK: UI
+        let ui_windows_size = Vec2::new(150., 100.);
+        let ui_windows_pos = Vec2::new(25., 25.);
+
+        widgets::Window::new(hash!(), ui_windows_pos, ui_windows_size)
+            .movable(false)
+            .label("World Config")
+            .ui(&mut root_ui(), |ui| {});
+
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
             grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
@@ -200,6 +212,7 @@ async fn main() {
                 },
             }
         }
+
         next_frame().await;
     }
 }
