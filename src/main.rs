@@ -30,15 +30,31 @@ const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
     pivot: None,
 };
 
+#[derive(Clone, Eq, Hash, PartialEq)]
+enum TileOptions {
+    Empty,
+    All,
+    Horizontal,
+    Vertical,
+    LeftDown,
+    LeftUp,
+    RightDown,
+    RightUp,
+    LeftRightDown1,
+    LeftRightDown2,
+    LeftRightUp1,
+    LeftRightUp2,
+}
+
 #[derive(Clone, PartialEq)]
 enum Tile {
-    Options(Vec<i32>),
+    Options(Vec<TileOptions>),
     Collapsed(Cell),
 }
 
 #[derive(Clone, PartialEq)]
 struct Cell {
-    tile: i32,
+    tile: TileOptions,
     edges: Vec<i32>,
 }
 
@@ -77,36 +93,34 @@ async fn main() {
     let rail_lru2_texture = load_texture("rail_lru2.png").await.unwrap();
 
     // create tiles and edges
-    let mut cells: HashMap<usize, Vec<i32>> = HashMap::new();
-    cells.insert(0, vec![0, 0, 0, 0]);
-    cells.insert(1, vec![1, 1, 1, 1]);
-    cells.insert(2, vec![0, 1, 0, 1]);
-    cells.insert(3, vec![1, 0, 1, 0]);
-    cells.insert(4, vec![0, 0, 1, 1]);
-    cells.insert(5, vec![1, 0, 0, 1]);
-    cells.insert(6, vec![0, 1, 1, 0]);
-    cells.insert(7, vec![1, 1, 0, 0]);
-    //
-    cells.insert(8, vec![0, 1, 1, 1]);
-    cells.insert(9, vec![0, 1, 1, 1]);
-    cells.insert(10, vec![1, 1, 0, 1]);
-    cells.insert(11, vec![1, 1, 0, 1]);
+    let mut cells: HashMap<TileOptions, Vec<i32>> = HashMap::new();
+    cells.insert(TileOptions::Empty, vec![0, 0, 0, 0]);
+    cells.insert(TileOptions::All, vec![1, 1, 1, 1]);
+    cells.insert(TileOptions::Horizontal, vec![0, 1, 0, 1]);
+    cells.insert(TileOptions::Vertical, vec![1, 0, 1, 0]);
+    cells.insert(TileOptions::LeftDown, vec![0, 0, 1, 1]);
+    cells.insert(TileOptions::LeftUp, vec![1, 0, 0, 1]);
+    cells.insert(TileOptions::RightDown, vec![0, 1, 1, 0]);
+    cells.insert(TileOptions::RightUp, vec![1, 1, 0, 0]);
+    cells.insert(TileOptions::LeftRightDown1, vec![0, 1, 1, 1]);
+    cells.insert(TileOptions::LeftRightDown2, vec![0, 1, 1, 1]);
+    cells.insert(TileOptions::LeftRightUp1, vec![1, 1, 0, 1]);
+    cells.insert(TileOptions::LeftRightUp1, vec![1, 1, 0, 1]);
 
     // create options
     let tile_options = vec![
-        0, //empty
-        1, //all
-        2, //vertical
-        3, //horizontal
-        4, //ld
-        5, //lu
-        6, //rd
-        7, //ru
-           //
-           //8,  //lrd1
-           //9,  //lrd2
-           //10, //lru1
-           //11, //lru2
+        TileOptions::Empty,
+        TileOptions::All,
+        TileOptions::Horizontal,
+        TileOptions::Vertical,
+        TileOptions::LeftDown,
+        TileOptions::LeftUp,
+        TileOptions::RightDown,
+        TileOptions::RightUp,
+        TileOptions::LeftRightDown1,
+        TileOptions::LeftRightDown2,
+        TileOptions::LeftRightUp1,
+        TileOptions::LeftRightUp2,
     ];
 
     // create grid
@@ -114,11 +128,11 @@ async fn main() {
 
     // choose random tile for start
     let mut choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
-    let mut choosen_cell_tile = *tile_options.choose(&mut rng).unwrap() as usize;
+    let mut choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
     grid[choosen_cell] = Tile::Collapsed(Cell {
-        tile: choosen_cell_tile as i32,
-        edges: cells[&choosen_cell_tile].clone(),
+        tile: choosen_cell_tile.clone(),
+        edges: cells[choosen_cell_tile].clone(),
     });
 
     loop {
@@ -137,20 +151,20 @@ async fn main() {
         let ui_windows_pos = Vec2::new(25., 25.);
 
         widgets::Window::new(hash!(), ui_windows_pos, ui_windows_size)
-            .movable(false)
+            //.movable(false)
             .label("World Config")
-            .ui(&mut root_ui(), |ui| {});
+            .ui(&mut root_ui(), |_ui| {});
 
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
             grid = vec![Tile::Options(tile_options.clone()); GRID_SIZE];
 
             choosen_cell = rng.gen_range(COLUMN..=GRID_SIZE - COLUMN);
-            choosen_cell_tile = *tile_options.choose(&mut rng).unwrap() as usize;
+            choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
             grid[choosen_cell] = Tile::Collapsed(Cell {
-                tile: choosen_cell_tile as i32,
-                edges: cells[&choosen_cell_tile].clone(),
+                tile: choosen_cell_tile.clone(),
+                edges: cells[choosen_cell_tile].clone(),
             });
         }
 
@@ -176,11 +190,11 @@ async fn main() {
         // ! MARK: WFC Part 2: Collapse
         if let Tile::Options(options) = &grid[least_one] {
             if let Some(damn) = options.choose(&mut rng) {
-                let choosen = *damn as usize;
+                let choosen = damn;
 
                 grid[least_one] = Tile::Collapsed(Cell {
-                    tile: choosen as i32,
-                    edges: cells[&choosen].clone(),
+                    tile: choosen.clone(),
+                    edges: cells[choosen].clone(),
                 });
             } else {
                 grid[least_one] = Tile::Options(tile_options.clone())
@@ -195,20 +209,42 @@ async fn main() {
             match cell {
                 Tile::Options(_) => draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM),
                 Tile::Collapsed(cell) => match cell.tile {
-                    0 => draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM),
-                    1 => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
-                    2 => draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM),
-                    3 => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
-                    4 => draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM),
-                    5 => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
-                    6 => draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM),
-                    7 => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
-                    //
-                    8 => draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, TEXTURE_PARAM),
-                    9 => draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, TEXTURE_PARAM),
-                    10 => draw_texture_ex(&rail_lru1_texture, x, y, WHITE, TEXTURE_PARAM),
-                    11 => draw_texture_ex(&rail_lru2_texture, x, y, WHITE, TEXTURE_PARAM),
-                    _ => draw_rectangle(x, y, TEXTURE_SIZE, TEXTURE_SIZE, MAGENTA),
+                    TileOptions::Empty => {
+                        draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::All => {
+                        draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::Horizontal => {
+                        draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::Vertical => {
+                        draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftDown => {
+                        draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftUp => {
+                        draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::RightDown => {
+                        draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::RightUp => {
+                        draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftRightDown1 => {
+                        draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftRightDown2 => {
+                        draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftRightUp1 => {
+                        draw_texture_ex(&rail_lru1_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
+                    TileOptions::LeftRightUp2 => {
+                        draw_texture_ex(&rail_lru2_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
                 },
             }
         }

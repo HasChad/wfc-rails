@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{Tile, BOTTOM, COLUMN, EDGE_COUNT, LEFT, RIGHT, ROW, TOP};
+use crate::{Tile, TileOptions, BOTTOM, COLUMN, EDGE_COUNT, LEFT, RIGHT, ROW, TOP};
 
-pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
+pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<TileOptions, Vec<i32>>) {
     for y in 0..ROW {
         'row: for x in 0..COLUMN {
             let current_tile = (y * COLUMN) + x;
@@ -22,8 +22,7 @@ pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
 
                                 let matching: Vec<_> = collection
                                     .into_iter()
-                                    .filter(|item| options.contains(&(*item as i32)))
-                                    .map(|key| key as i32)
+                                    .filter(|item| options.contains(item))
                                     .collect();
 
                                 grid[current_tile + 1] = Tile::Options(matching);
@@ -46,8 +45,7 @@ pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
 
                                 let matching: Vec<_> = collection
                                     .into_iter()
-                                    .filter(|item| options.contains(&(*item as i32)))
-                                    .map(|key| key as i32)
+                                    .filter(|item| options.contains(item))
                                     .collect();
 
                                 grid[current_tile - 1] = Tile::Options(matching);
@@ -70,8 +68,7 @@ pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
 
                                 let matching: Vec<_> = collection
                                     .into_iter()
-                                    .filter(|item| options.contains(&(*item as i32)))
-                                    .map(|key| key as i32)
+                                    .filter(|item| options.contains(item))
                                     .collect();
 
                                 grid[current_tile - COLUMN] = Tile::Options(matching);
@@ -94,8 +91,7 @@ pub fn wave_funtion(grid: &mut [Tile], cells: &HashMap<usize, Vec<i32>>) {
 
                                 let matching: Vec<_> = collection
                                     .into_iter()
-                                    .filter(|item| options.contains(&(*item as i32)))
-                                    .map(|key| key as i32)
+                                    .filter(|item| options.contains(item))
                                     .collect();
 
                                 grid[current_tile + COLUMN] = Tile::Options(matching);
