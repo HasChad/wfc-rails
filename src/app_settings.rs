@@ -17,7 +17,7 @@ fn populate_array(img: Image, array: &mut [u8]) {
     }
 }
 
-pub fn set() -> Icon {
+fn set_icon() -> Icon {
     let mut array_small: [u8; 1024] = [0; 1024];
     let mut array_medium: [u8; 4096] = [0; 4096];
     let mut array_big: [u8; 16384] = [0; 16384];
@@ -45,7 +45,7 @@ pub fn set() -> Icon {
 pub fn window_conf() -> Conf {
     Conf {
         window_title: "WFC-Rails".into(),
-        icon: Some(set()),
+        icon: Some(set_icon()),
         window_width: COLUMN as i32 * TEXTURE_SIZE as i32,
         window_height: ROW as i32 * TEXTURE_SIZE as i32,
         window_resizable: false,

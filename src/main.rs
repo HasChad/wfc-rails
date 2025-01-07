@@ -34,6 +34,7 @@ const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
 enum Tile {
+    UnderCons,
     Empty,
     All,
     Horizontal,
@@ -83,6 +84,7 @@ async fn main() {
 
     // create tiles and edges
     let cells = HashMap::from([
+        (Tile::UnderCons, vec![0, 0, 0, 0]),
         (Tile::Empty, vec![0, 0, 0, 0]),
         (Tile::All, vec![1, 1, 1, 1]),
         (Tile::Horizontal, vec![0, 1, 0, 1]),
@@ -99,6 +101,7 @@ async fn main() {
 
     // create options
     let tile_options = vec![
+        Tile::UnderCons,
         Tile::Empty,
         Tile::All,
         Tile::Horizontal,
@@ -189,7 +192,10 @@ async fn main() {
                     edges: cells[choosen].clone(),
                 });
             } else {
-                grid[least_one] = Cell::Options(tile_options.clone())
+                grid[least_one] = Cell::Collapsed(TileProp {
+                    tile: Tile::UnderCons,
+                    edges: vec![0, 0, 0, 0],
+                })
             }
         }
 
@@ -201,6 +207,9 @@ async fn main() {
             match cell {
                 Cell::Options(_) => draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM),
                 Cell::Collapsed(cell) => match cell.tile {
+                    Tile::UnderCons => {
+                        draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM)
+                    }
                     Tile::Empty => draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM),
                     Tile::All => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
                     Tile::Horizontal => {
