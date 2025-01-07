@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 macroquad = "0.4.13"
 rand = "0.8.5"
+
+[build-dependencies]
+winres = "0.1.12"

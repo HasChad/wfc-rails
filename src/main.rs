@@ -5,8 +5,10 @@ use macroquad::{
 };
 use std::collections::HashMap;
 
+mod app_settings;
 mod wfc_functions;
 
+use app_settings::*;
 use wfc_functions::*;
 
 const ROW: usize = 10;
@@ -56,17 +58,6 @@ enum Cell {
 struct TileProp {
     tile: Tile,
     edges: Vec<i32>,
-}
-
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "WFC-Rails".into(),
-        icon: None,
-        window_width: COLUMN as i32 * TEXTURE_SIZE as i32,
-        window_height: ROW as i32 * TEXTURE_SIZE as i32,
-        window_resizable: false,
-        ..Default::default()
-    }
 }
 
 #[macroquad::main(window_conf)]
@@ -126,7 +117,7 @@ async fn main() {
     let mut grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
 
     // choose random tile for start
-    let mut choosen_cell = rng.gen_range(0..=GRID_SIZE);
+    let mut choosen_cell = rng.gen_range(0..GRID_SIZE);
     let mut choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
     grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -160,7 +151,7 @@ async fn main() {
         if is_key_pressed(KeyCode::A) {
             grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
 
-            choosen_cell = rng.gen_range(0..=GRID_SIZE);
+            choosen_cell = rng.gen_range(0..GRID_SIZE);
             choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
             grid[choosen_cell] = Cell::Collapsed(TileProp {
