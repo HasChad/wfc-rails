@@ -34,7 +34,6 @@ const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
 enum Tile {
-    UnderCons,
     Empty,
     All,
     Horizontal,
@@ -66,6 +65,7 @@ async fn main() {
     set_pc_assets_folder("assets");
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
+    let mut fps = 120.0;
 
     // load rail textures
     let empty_texture = load_texture("empty.png").await.unwrap();
@@ -84,7 +84,6 @@ async fn main() {
 
     // create tiles and edges
     let cells = HashMap::from([
-        (Tile::UnderCons, vec![0, 0, 0, 0]),
         (Tile::Empty, vec![0, 0, 0, 0]),
         (Tile::All, vec![1, 1, 1, 1]),
         (Tile::Horizontal, vec![0, 1, 0, 1]),
@@ -101,7 +100,6 @@ async fn main() {
 
     // create options
     let tile_options = vec![
-        Tile::UnderCons,
         Tile::Empty,
         Tile::All,
         Tile::Horizontal,
@@ -130,25 +128,29 @@ async fn main() {
 
     loop {
         // ! MARK: FPS limiter
-        /*
-        let minimum_frame_time = 1. / 5.; // 60 FPS
+
+        let minimum_frame_time = 1. / fps;
         let frame_time = get_frame_time();
         if frame_time < minimum_frame_time {
             let time_to_sleep = (minimum_frame_time - frame_time) * 1000.;
             std::thread::sleep(std::time::Duration::from_millis(time_to_sleep as u64));
         }
-        */
 
         // ! MARK: UI
-        /*
-        let ui_windows_size = Vec2::new(150., 100.);
+        let ui_windows_size = Vec2::new(200., 100.);
         let ui_windows_pos = Vec2::new(25., 25.);
 
         widgets::Window::new(hash!(), ui_windows_pos, ui_windows_size)
             //.movable(false)
             .label("World Config")
-            .ui(&mut root_ui(), |_ui| {});
-        */
+            .ui(&mut root_ui(), |ui| {
+                ui.slider(hash!(), "Speed slider", 10.0..120.0, &mut fps);
+                /*
+                ui.tree_node(hash!(), "Tiles", |ui| {
+                    ui.label(None, "Some random text");
+                });
+                */
+            });
 
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
@@ -191,11 +193,6 @@ async fn main() {
                     tile: choosen.clone(),
                     edges: cells[choosen].clone(),
                 });
-            } else {
-                grid[least_one] = Cell::Collapsed(TileProp {
-                    tile: Tile::UnderCons,
-                    edges: vec![0, 0, 0, 0],
-                })
             }
         }
 
@@ -207,9 +204,6 @@ async fn main() {
             match cell {
                 Cell::Options(_) => draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM),
                 Cell::Collapsed(cell) => match cell.tile {
-                    Tile::UnderCons => {
-                        draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM)
-                    }
                     Tile::Empty => draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM),
                     Tile::All => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
                     Tile::Horizontal => {
