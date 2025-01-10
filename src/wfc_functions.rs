@@ -1,15 +1,21 @@
+use macroquad::prelude::*;
 use std::collections::HashMap;
 
-use crate::{Cell, Tile, BOTTOM, COLUMN, EDGE_COUNT, LEFT, RIGHT, ROW, TOP};
+use crate::{Cell, Tile, BOTTOM, EDGE_COUNT, LEFT, RIGHT, TOP};
 
-pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
-    for y in 0..ROW {
-        'row: for x in 0..COLUMN {
-            let current_tile = (y * COLUMN) + x;
+pub fn wave_funtion(
+    grid: &mut [Cell],
+    cells: &HashMap<Tile, Vec<i32>>,
+    grid_row: &usize,
+    grid_column: &usize,
+) {
+    for y in 0..*grid_row {
+        'row: for x in 0..*grid_column {
+            let current_tile = (y * *grid_column) + x;
 
             if let Cell::Collapsed(cell) = grid[current_tile].clone() {
                 // ! MARK: check right
-                if x != COLUMN - 1 {
+                if x != *grid_column - 1 {
                     if let Cell::Options(options) = grid[current_tile + 1].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[RIGHT] == edge_count {
@@ -56,7 +62,7 @@ pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
 
                 // ! MARK: check top
                 if y != 0 {
-                    if let Cell::Options(options) = grid[current_tile - COLUMN].clone() {
+                    if let Cell::Options(options) = grid[current_tile - *grid_column].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[TOP] == edge_count {
                                 let collection: Vec<_> = cells
@@ -71,15 +77,15 @@ pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
                                     .filter(|item| options.contains(item))
                                     .collect();
 
-                                grid[current_tile - COLUMN] = Cell::Options(matching);
+                                grid[current_tile - *grid_column] = Cell::Options(matching);
                             }
                         }
                     }
                 }
 
                 // ! MARK: check bottom
-                if y != ROW - 1 {
-                    if let Cell::Options(options) = grid[current_tile + COLUMN].clone() {
+                if y != *grid_row - 1 {
+                    if let Cell::Options(options) = grid[current_tile + *grid_column].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[BOTTOM] == edge_count {
                                 let collection: Vec<_> = cells
@@ -94,7 +100,7 @@ pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
                                     .filter(|item| options.contains(item))
                                     .collect();
 
-                                grid[current_tile + COLUMN] = Cell::Options(matching);
+                                grid[current_tile + *grid_column] = Cell::Options(matching);
                             }
                         }
                     }
@@ -103,5 +109,45 @@ pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
                 continue 'row;
             }
         }
+    }
+}
+
+pub fn camera_fixer(camera: &mut Camera2D, zoomer: &mut Vec2) {
+    // ! window res
+    camera.zoom = vec2(
+        2. / screen_width() + zoomer.x / screen_width(),
+        2. / screen_height() + zoomer.y / screen_height(),
+    );
+    camera.target = Vec2::ZERO;
+
+    if screen_width() < 320. {
+        request_new_screen_size(320., screen_height());
+    }
+
+    if screen_height() < 240. {
+        request_new_screen_size(screen_width(), 240.);
+    }
+
+    // ! controller
+    if mouse_wheel().1 > 0. {
+        *zoomer += 0.2
+    } else if mouse_wheel().1 < 0. && zoomer.x > -2. {
+        *zoomer -= 0.2;
+    }
+
+    if camera.zoom.x < 0. {
+        camera.zoom += Vec2::new(0.1 / screen_width(), 0.1 / screen_height())
+    }
+
+    if is_mouse_button_down(MouseButton::Left) {
+        let mouse_pos = mouse_delta_position();
+
+        camera.offset.x -= mouse_pos.x;
+        camera.offset.y += mouse_pos.y;
+    }
+
+    if is_key_pressed(KeyCode::Space) {
+        camera.offset = Vec2::ZERO;
+        *zoomer = Vec2::ZERO;
     }
 }

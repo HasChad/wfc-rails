@@ -11,26 +11,13 @@ mod wfc_functions;
 use app_settings::*;
 use wfc_functions::*;
 
-const ROW: usize = 10;
-const COLUMN: usize = 15;
-const TEXTURE_SIZE: f32 = 64.;
-const GRID_SIZE: usize = ROW * COLUMN;
+const GAME_WIDTH: f32 = 1280.0;
+const GAME_HEIGHT: f32 = 720.0;
 const TOP: usize = 0;
 const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
 const LEFT: usize = 3;
 const EDGE_COUNT: i32 = 2;
-const TEXTURE_PARAM: DrawTextureParams = DrawTextureParams {
-    dest_size: Some(Vec2 {
-        x: TEXTURE_SIZE,
-        y: TEXTURE_SIZE,
-    }),
-    source: None,
-    rotation: 0.,
-    flip_x: false,
-    flip_y: false,
-    pivot: None,
-};
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
 enum Tile {
@@ -66,6 +53,15 @@ async fn main() {
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
     let mut fps = 120.0;
+    let mut texture_size: f32;
+    let mut grid_row: usize = 10;
+    let mut grid_column: usize = 15;
+    let mut grid_size: usize = grid_row * grid_column;
+    let mut camera = Camera2D {
+        zoom: vec2(2. / screen_width(), 2. / screen_height()),
+        ..Default::default()
+    };
+    let mut zoomer = Vec2::ZERO;
 
     // load rail textures
     let empty_texture = load_texture("empty.png").await.unwrap();
@@ -115,10 +111,10 @@ async fn main() {
     ];
 
     // create grid
-    let mut grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
+    let mut grid = vec![Cell::Options(tile_options.clone()); grid_size];
 
     // choose random tile for start
-    let mut choosen_cell = rng.gen_range(0..GRID_SIZE);
+    let mut choosen_cell = rng.gen_range(0..grid_size);
     let mut choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
     grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -145,6 +141,9 @@ async fn main() {
             .label("World Config")
             .ui(&mut root_ui(), |ui| {
                 ui.slider(hash!(), "Speed slider", 10.0..120.0, &mut fps);
+                ui.slider(hash!(), "Column", 2.0..100.0, &mut (grid_column as f32));
+                //ui.slider(hash!(), "Row", 2..100, &mut grid_row);
+
                 /*
                 ui.tree_node(hash!(), "Tiles", |ui| {
                     ui.label(None, "Some random text");
@@ -154,9 +153,9 @@ async fn main() {
 
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
-            grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
+            grid = vec![Cell::Options(tile_options.clone()); grid_size];
 
-            choosen_cell = rng.gen_range(0..GRID_SIZE);
+            choosen_cell = rng.gen_range(0..grid_size);
             choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
             grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -166,7 +165,7 @@ async fn main() {
         }
 
         // ! MARK: WFC Part 1: Wave
-        wave_funtion(&mut grid, &cells);
+        wave_funtion(&mut grid, &cells, &grid_row, &grid_column);
 
         // ! MARK: Check for least option one
         let mut least_one = 0;
@@ -196,37 +195,72 @@ async fn main() {
             }
         }
 
+        camera_fixer(&mut camera, &mut zoomer);
+
         // ! MARK: Draw world
+        set_camera(&camera);
+
+        texture_size = screen_height() / grid_row as f32;
+
+        let pos_x = (grid_column as f32 * texture_size) / 2.;
+        let pos_y = (grid_row as f32 * texture_size) / 2.;
+
+        let texture_param = DrawTextureParams {
+            dest_size: Some(Vec2 {
+                x: texture_size,
+                y: texture_size,
+            }),
+            source: None,
+            rotation: 0.,
+            flip_x: false,
+            flip_y: false,
+            pivot: None,
+        };
+
         for (index, cell) in grid.iter().enumerate() {
-            let x = (index % COLUMN) as f32 * TEXTURE_SIZE;
-            let y = (index / COLUMN) as f32 * TEXTURE_SIZE;
+            let x = (index % grid_column) as f32 * texture_size - pos_x;
+            let y = (index / grid_column) as f32 * texture_size - pos_y;
 
             match cell {
-                Cell::Options(_) => draw_texture_ex(&uc_sign_texture, x, y, WHITE, TEXTURE_PARAM),
+                Cell::Options(_) => {
+                    draw_texture_ex(&uc_sign_texture, x, y, WHITE, texture_param.clone())
+                }
                 Cell::Collapsed(cell) => match cell.tile {
-                    Tile::Empty => draw_texture_ex(&empty_texture, x, y, WHITE, TEXTURE_PARAM),
-                    Tile::All => draw_texture_ex(&rail_all_texture, x, y, WHITE, TEXTURE_PARAM),
+                    Tile::Empty => {
+                        draw_texture_ex(&empty_texture, x, y, WHITE, texture_param.clone())
+                    }
+                    Tile::All => {
+                        draw_texture_ex(&rail_all_texture, x, y, WHITE, texture_param.clone())
+                    }
                     Tile::Horizontal => {
-                        draw_texture_ex(&rail_h_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_h_texture, x, y, WHITE, texture_param.clone())
                     }
-                    Tile::Vertical => draw_texture_ex(&rail_v_texture, x, y, WHITE, TEXTURE_PARAM),
-                    Tile::LeftDown => draw_texture_ex(&rail_ld_texture, x, y, WHITE, TEXTURE_PARAM),
-                    Tile::LeftUp => draw_texture_ex(&rail_lu_texture, x, y, WHITE, TEXTURE_PARAM),
+                    Tile::Vertical => {
+                        draw_texture_ex(&rail_v_texture, x, y, WHITE, texture_param.clone())
+                    }
+                    Tile::LeftDown => {
+                        draw_texture_ex(&rail_ld_texture, x, y, WHITE, texture_param.clone())
+                    }
+                    Tile::LeftUp => {
+                        draw_texture_ex(&rail_lu_texture, x, y, WHITE, texture_param.clone())
+                    }
                     Tile::RightDown => {
-                        draw_texture_ex(&rail_rd_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_rd_texture, x, y, WHITE, texture_param.clone())
                     }
-                    Tile::RightUp => draw_texture_ex(&rail_ru_texture, x, y, WHITE, TEXTURE_PARAM),
+                    Tile::RightUp => {
+                        draw_texture_ex(&rail_ru_texture, x, y, WHITE, texture_param.clone())
+                    }
                     Tile::LeftRightDown1 => {
-                        draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightDown2 => {
-                        draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightUp1 => {
-                        draw_texture_ex(&rail_lru1_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_lru1_texture, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightUp2 => {
-                        draw_texture_ex(&rail_lru2_texture, x, y, WHITE, TEXTURE_PARAM)
+                        draw_texture_ex(&rail_lru2_texture, x, y, WHITE, texture_param.clone())
                     }
                 },
             }
