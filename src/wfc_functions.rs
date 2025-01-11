@@ -1,21 +1,16 @@
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
-use crate::{Cell, Tile, BOTTOM, EDGE_COUNT, LEFT, RIGHT, TOP};
+use crate::{Cell, Tile, BOTTOM, COLUMN, EDGE_COUNT, LEFT, RIGHT, ROW, TOP};
 
-pub fn wave_funtion(
-    grid: &mut [Cell],
-    cells: &HashMap<Tile, Vec<i32>>,
-    grid_row: &usize,
-    grid_column: &usize,
-) {
-    for y in 0..*grid_row {
-        'row: for x in 0..*grid_column {
-            let current_tile = (y * *grid_column) + x;
+pub fn wave_funtion(grid: &mut [Cell], cells: &HashMap<Tile, Vec<i32>>) {
+    for y in 0..ROW {
+        'row: for x in 0..COLUMN {
+            let current_tile = (y * COLUMN) + x;
 
             if let Cell::Collapsed(cell) = grid[current_tile].clone() {
                 // ! MARK: check right
-                if x != *grid_column - 1 {
+                if x != COLUMN - 1 {
                     if let Cell::Options(options) = grid[current_tile + 1].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[RIGHT] == edge_count {
@@ -62,7 +57,7 @@ pub fn wave_funtion(
 
                 // ! MARK: check top
                 if y != 0 {
-                    if let Cell::Options(options) = grid[current_tile - *grid_column].clone() {
+                    if let Cell::Options(options) = grid[current_tile - COLUMN].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[TOP] == edge_count {
                                 let collection: Vec<_> = cells
@@ -77,15 +72,15 @@ pub fn wave_funtion(
                                     .filter(|item| options.contains(item))
                                     .collect();
 
-                                grid[current_tile - *grid_column] = Cell::Options(matching);
+                                grid[current_tile - COLUMN] = Cell::Options(matching);
                             }
                         }
                     }
                 }
 
                 // ! MARK: check bottom
-                if y != *grid_row - 1 {
-                    if let Cell::Options(options) = grid[current_tile + *grid_column].clone() {
+                if y != ROW - 1 {
+                    if let Cell::Options(options) = grid[current_tile + COLUMN].clone() {
                         for edge_count in 0..EDGE_COUNT {
                             if cell.edges[BOTTOM] == edge_count {
                                 let collection: Vec<_> = cells
@@ -100,7 +95,7 @@ pub fn wave_funtion(
                                     .filter(|item| options.contains(item))
                                     .collect();
 
-                                grid[current_tile + *grid_column] = Cell::Options(matching);
+                                grid[current_tile + COLUMN] = Cell::Options(matching);
                             }
                         }
                     }

@@ -1,8 +1,5 @@
 use ::rand::{seq::SliceRandom, thread_rng, Rng};
-use macroquad::{
-    prelude::*,
-    ui::{hash, root_ui, widgets},
-};
+use macroquad::prelude::*;
 use std::collections::HashMap;
 
 mod app_settings;
@@ -11,6 +8,9 @@ mod wfc_functions;
 use app_settings::*;
 use wfc_functions::*;
 
+const ROW: usize = 10;
+const COLUMN: usize = 15;
+const GRID_SIZE: usize = ROW * COLUMN;
 const TOP: usize = 0;
 const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
@@ -50,11 +50,7 @@ async fn main() {
     set_pc_assets_folder("assets");
     set_default_filter_mode(FilterMode::Nearest);
     let mut rng = thread_rng();
-    let mut fps = 120.0;
     let mut texture_size: f32;
-    let mut grid_row: usize = 10;
-    let mut grid_column: usize = 15;
-    let mut grid_size: usize = grid_row * grid_column;
     let mut camera = Camera2D {
         zoom: vec2(2. / screen_width(), 2. / screen_height()),
         ..Default::default()
@@ -109,10 +105,10 @@ async fn main() {
     ];
 
     // create grid
-    let mut grid = vec![Cell::Options(tile_options.clone()); grid_size];
+    let mut grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
 
     // choose random tile for start
-    let mut choosen_cell = rng.gen_range(0..grid_size);
+    let mut choosen_cell = rng.gen_range(0..GRID_SIZE);
     let mut choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
     grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -122,30 +118,18 @@ async fn main() {
 
     loop {
         // ! MARK: FPS limiter
-        let minimum_frame_time = 1. / fps;
+        let minimum_frame_time = 1. / 120.;
         let frame_time = get_frame_time();
         if frame_time < minimum_frame_time {
             let time_to_sleep = (minimum_frame_time - frame_time) * 1000.;
             std::thread::sleep(std::time::Duration::from_millis(time_to_sleep as u64));
         }
 
-        // ! MARK: UI
-        let ui_windows_size = Vec2::new(200., 100.);
-        let ui_windows_pos = Vec2::new(25., 25.);
-
-        widgets::Window::new(hash!(), ui_windows_pos, ui_windows_size)
-            //.movable(false)
-            .label("World Config")
-            .ui(&mut root_ui(), |ui| {
-                ui.slider(hash!(), "Speed slider", 10.0..120.0, &mut fps);
-                ui.slider(hash!(), "Column", 2.0..100.0, &mut (grid_column as f32));
-            });
-
         // ! MARK: Enterance
         if is_key_pressed(KeyCode::A) {
-            grid = vec![Cell::Options(tile_options.clone()); grid_size];
+            grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
 
-            choosen_cell = rng.gen_range(0..grid_size);
+            choosen_cell = rng.gen_range(0..GRID_SIZE);
             choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
             grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -155,7 +139,7 @@ async fn main() {
         }
 
         // ! MARK: WFC Part 1: Wave
-        wave_funtion(&mut grid, &cells, &grid_row, &grid_column);
+        wave_funtion(&mut grid, &cells);
 
         // ! MARK: Check for least option one
         let mut least_one = 0;
@@ -190,10 +174,10 @@ async fn main() {
         // ! MARK: Draw world
         set_camera(&camera);
 
-        texture_size = screen_height() / grid_row as f32;
+        texture_size = screen_height() / ROW as f32;
 
-        let pos_x = (grid_column as f32 * texture_size) / 2.;
-        let pos_y = (grid_row as f32 * texture_size) / 2.;
+        let pos_x = (COLUMN as f32 * texture_size) / 2.;
+        let pos_y = (ROW as f32 * texture_size) / 2.;
 
         let texture_param = DrawTextureParams {
             dest_size: Some(Vec2 {
@@ -208,8 +192,8 @@ async fn main() {
         };
 
         for (index, cell) in grid.iter().enumerate() {
-            let x = (index % grid_column) as f32 * texture_size - pos_x;
-            let y = (index / grid_column) as f32 * texture_size - pos_y;
+            let x = (index % COLUMN) as f32 * texture_size - pos_x;
+            let y = (index / COLUMN) as f32 * texture_size - pos_y;
 
             match cell {
                 Cell::Options(_) => {
