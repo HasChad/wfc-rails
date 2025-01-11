@@ -11,8 +11,6 @@ mod wfc_functions;
 use app_settings::*;
 use wfc_functions::*;
 
-const GAME_WIDTH: f32 = 1280.0;
-const GAME_HEIGHT: f32 = 720.0;
 const TOP: usize = 0;
 const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
@@ -124,7 +122,6 @@ async fn main() {
 
     loop {
         // ! MARK: FPS limiter
-
         let minimum_frame_time = 1. / fps;
         let frame_time = get_frame_time();
         if frame_time < minimum_frame_time {
@@ -142,13 +139,6 @@ async fn main() {
             .ui(&mut root_ui(), |ui| {
                 ui.slider(hash!(), "Speed slider", 10.0..120.0, &mut fps);
                 ui.slider(hash!(), "Column", 2.0..100.0, &mut (grid_column as f32));
-                //ui.slider(hash!(), "Row", 2..100, &mut grid_row);
-
-                /*
-                ui.tree_node(hash!(), "Tiles", |ui| {
-                    ui.label(None, "Some random text");
-                });
-                */
             });
 
         // ! MARK: Enterance

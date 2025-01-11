@@ -1,8 +1,6 @@
 use macroquad::prelude::*;
 use miniquad::conf::Icon;
 
-use crate::{GAME_HEIGHT, GAME_WIDTH};
-
 fn load_img(bytes: &'static [u8]) -> Image {
     Image::from_file_with_format(bytes, Some(ImageFormat::Png)).unwrap()
 }
@@ -46,8 +44,8 @@ pub fn window_conf() -> Conf {
     Conf {
         window_title: "WFC-Rails".into(),
         icon: Some(set_icon()),
-        window_width: GAME_WIDTH as i32,
-        window_height: GAME_HEIGHT as i32,
+        window_width: 1280,
+        window_height: 720,
         ..Default::default()
     }
 }
