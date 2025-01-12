@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use ::rand::{seq::SliceRandom, thread_rng, Rng};
 use macroquad::prelude::*;
 use std::collections::HashMap;
@@ -158,7 +160,7 @@ async fn main() {
             }
         }
 
-        camera_fixer(&mut camera, &mut zoomer);
+        camera_controller(&mut camera, &mut zoomer);
 
         // ! MARK: Draw world
         set_camera(&camera);
@@ -230,5 +232,45 @@ async fn main() {
         }
 
         next_frame().await;
+    }
+}
+
+pub fn camera_controller(camera: &mut Camera2D, zoomer: &mut Vec2) {
+    // ! window res
+    camera.zoom = vec2(
+        2. / screen_width() + zoomer.x / screen_width(),
+        2. / screen_height() + zoomer.y / screen_height(),
+    );
+    camera.target = Vec2::ZERO;
+
+    if screen_width() < 320. {
+        request_new_screen_size(320., screen_height());
+    }
+
+    if screen_height() < 240. {
+        request_new_screen_size(screen_width(), 240.);
+    }
+
+    // ! controller
+    if mouse_wheel().1 > 0. {
+        *zoomer += 0.2
+    } else if mouse_wheel().1 < 0. && zoomer.x > -1. {
+        *zoomer -= 0.2;
+    }
+
+    if camera.zoom.x < 0. {
+        camera.zoom += Vec2::new(0.1 / screen_width(), 0.1 / screen_height())
+    }
+
+    if is_mouse_button_down(MouseButton::Left) {
+        let mouse_pos = mouse_delta_position();
+
+        camera.offset.x -= mouse_pos.x;
+        camera.offset.y += mouse_pos.y;
+    }
+
+    if is_key_pressed(KeyCode::Space) {
+        camera.offset = Vec2::ZERO;
+        *zoomer = Vec2::ZERO;
     }
 }
