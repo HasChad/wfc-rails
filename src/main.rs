@@ -3,9 +3,11 @@ use macroquad::prelude::*;
 use std::collections::HashMap;
 
 mod app_settings;
+mod resources;
 mod wfc_functions;
 
 use app_settings::*;
+use resources::*;
 use wfc_functions::*;
 
 const ROW: usize = 10;
@@ -57,20 +59,7 @@ async fn main() {
     };
     let mut zoomer = Vec2::ZERO;
 
-    // load rail textures
-    let empty_texture = load_texture("empty.png").await.unwrap();
-    let uc_sign_texture = load_texture("under_cons.png").await.unwrap();
-    let rail_all_texture = load_texture("rail_all.png").await.unwrap();
-    let rail_h_texture = load_texture("rail_h.png").await.unwrap();
-    let rail_v_texture = load_texture("rail_v.png").await.unwrap();
-    let rail_ld_texture = load_texture("rail_ld.png").await.unwrap();
-    let rail_lu_texture = load_texture("rail_lu.png").await.unwrap();
-    let rail_rd_texture = load_texture("rail_rd.png").await.unwrap();
-    let rail_ru_texture = load_texture("rail_ru.png").await.unwrap();
-    let rail_lrd1_texture = load_texture("rail_lrd1.png").await.unwrap();
-    let rail_lrd2_texture = load_texture("rail_lrd2.png").await.unwrap();
-    let rail_lru1_texture = load_texture("rail_lru1.png").await.unwrap();
-    let rail_lru2_texture = load_texture("rail_lru2.png").await.unwrap();
+    let textures = Resources::load_textures();
 
     // create tiles and edges
     let cells = HashMap::from([
@@ -197,44 +186,44 @@ async fn main() {
 
             match cell {
                 Cell::Options(_) => {
-                    draw_texture_ex(&uc_sign_texture, x, y, WHITE, texture_param.clone())
+                    draw_texture_ex(&textures.uc_sign, x, y, WHITE, texture_param.clone())
                 }
                 Cell::Collapsed(cell) => match cell.tile {
                     Tile::Empty => {
-                        draw_texture_ex(&empty_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_empty, x, y, WHITE, texture_param.clone())
                     }
                     Tile::All => {
-                        draw_texture_ex(&rail_all_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_all, x, y, WHITE, texture_param.clone())
                     }
                     Tile::Horizontal => {
-                        draw_texture_ex(&rail_h_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_h, x, y, WHITE, texture_param.clone())
                     }
                     Tile::Vertical => {
-                        draw_texture_ex(&rail_v_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_v, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftDown => {
-                        draw_texture_ex(&rail_ld_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_ld, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftUp => {
-                        draw_texture_ex(&rail_lu_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_lu, x, y, WHITE, texture_param.clone())
                     }
                     Tile::RightDown => {
-                        draw_texture_ex(&rail_rd_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_rd, x, y, WHITE, texture_param.clone())
                     }
                     Tile::RightUp => {
-                        draw_texture_ex(&rail_ru_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_ru, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightDown1 => {
-                        draw_texture_ex(&rail_lrd1_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_lrd1, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightDown2 => {
-                        draw_texture_ex(&rail_lrd2_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_lrd2, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightUp1 => {
-                        draw_texture_ex(&rail_lru1_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_lru1, x, y, WHITE, texture_param.clone())
                     }
                     Tile::LeftRightUp2 => {
-                        draw_texture_ex(&rail_lru2_texture, x, y, WHITE, texture_param.clone())
+                        draw_texture_ex(&textures.rail_lru2, x, y, WHITE, texture_param.clone())
                     }
                 },
             }
