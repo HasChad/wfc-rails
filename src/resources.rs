@@ -1,4 +1,10 @@
 use macroquad::texture::Texture2D;
+use rust_embed::Embed;
+
+#[derive(Embed)]
+#[folder = "assets/"]
+#[exclude = "icons/"]
+struct Asset;
 
 pub struct Resources {
     pub uc_sign: Texture2D,
@@ -19,19 +25,19 @@ pub struct Resources {
 impl Resources {
     pub fn load_textures() -> Resources {
         // load rail textures
-        let uc_sign = include_bytes!("../assets/under_cons.png");
-        let rail_empty = include_bytes!("../assets/empty.png");
-        let rail_all = include_bytes!("../assets/rail_all.png");
-        let rail_h = include_bytes!("../assets/rail_h.png");
-        let rail_v = include_bytes!("../assets/rail_v.png");
-        let rail_ld = include_bytes!("../assets/rail_ld.png");
-        let rail_lu = include_bytes!("../assets/rail_lu.png");
-        let rail_rd = include_bytes!("../assets/rail_rd.png");
-        let rail_ru = include_bytes!("../assets/rail_ru.png");
-        let rail_lrd1 = include_bytes!("../assets/rail_lrd1.png");
-        let rail_lrd2 = include_bytes!("../assets/rail_lrd2.png");
-        let rail_lru1 = include_bytes!("../assets/rail_lru1.png");
-        let rail_lru2 = include_bytes!("../assets/rail_lru2.png");
+        let uc_sign = &Asset::get("under_cons.png").unwrap().data.to_vec();
+        let rail_empty = &Asset::get("empty.png").unwrap().data.to_vec();
+        let rail_all = &Asset::get("rail_all.png").unwrap().data.to_vec();
+        let rail_h = &Asset::get("rail_h.png").unwrap().data.to_vec();
+        let rail_v = &Asset::get("rail_v.png").unwrap().data.to_vec();
+        let rail_ld = &Asset::get("rail_ld.png").unwrap().data.to_vec();
+        let rail_lu = &Asset::get("rail_lu.png").unwrap().data.to_vec();
+        let rail_rd = &Asset::get("rail_rd.png").unwrap().data.to_vec();
+        let rail_ru = &Asset::get("rail_ru.png").unwrap().data.to_vec();
+        let rail_lrd1 = &Asset::get("rail_lrd1.png").unwrap().data.to_vec();
+        let rail_lrd2 = &Asset::get("rail_lrd2.png").unwrap().data.to_vec();
+        let rail_lru1 = &Asset::get("rail_lru1.png").unwrap().data.to_vec();
+        let rail_lru2 = &Asset::get("rail_lru2.png").unwrap().data.to_vec();
 
         Resources {
             uc_sign: Texture2D::from_file_with_format(uc_sign, None),
