@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 
-use ::rand::{seq::SliceRandom, thread_rng, Rng};
+use ::rand::{random_range, rng, seq::IndexedRandom};
+use egui_macroquad::egui;
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
@@ -12,14 +13,13 @@ use app_settings::*;
 use resources::*;
 use wfc_functions::*;
 
-const ROW: usize = 10;
-const COLUMN: usize = 15;
-const GRID_SIZE: usize = ROW * COLUMN;
 const TOP: usize = 0;
 const RIGHT: usize = 1;
 const BOTTOM: usize = 2;
 const LEFT: usize = 3;
+//
 const EDGE_COUNT: i32 = 2;
+const TEXTURE_SIZE: f32 = 64.0;
 
 #[derive(Clone, Eq, Hash, PartialEq, Debug)]
 enum Tile {
@@ -53,13 +53,20 @@ struct TileProp {
 async fn main() {
     set_pc_assets_folder("assets");
     set_default_filter_mode(FilterMode::Nearest);
-    let mut rng = thread_rng();
-    let mut texture_size: f32;
+    let mut rng = rng();
     let mut camera = Camera2D {
         zoom: vec2(2. / screen_width(), 2. / screen_height()),
         ..Default::default()
     };
-    let mut zoomer = Vec2::ZERO;
+    let mut zoomer = ZOOM_DEFAULT;
+
+    let mut next_row: usize = 10;
+    let mut next_column: usize = 10;
+    //
+    let mut row: usize = 10;
+    let mut column: usize = 10;
+    //
+    let mut grid_size: usize = row * column;
 
     let textures = Resources::load_textures();
 
@@ -96,10 +103,10 @@ async fn main() {
     ];
 
     // create grid
-    let mut grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
+    let mut grid = vec![Cell::Options(tile_options.clone()); grid_size];
 
     // choose random tile for start
-    let mut choosen_cell = rng.gen_range(0..GRID_SIZE);
+    let mut choosen_cell = random_range(0..grid_size);
     let mut choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
 
     grid[choosen_cell] = Cell::Collapsed(TileProp {
@@ -116,21 +123,53 @@ async fn main() {
             std::thread::sleep(std::time::Duration::from_millis(time_to_sleep as u64));
         }
 
-        // ! MARK: Enterance
-        if is_key_pressed(KeyCode::A) {
-            grid = vec![Cell::Options(tile_options.clone()); GRID_SIZE];
+        // ! MARK: UI
+        egui_macroquad::ui(|egui_ctx| {
+            egui::Window::new("Settings")
+                .resizable(false)
+                .collapsible(false)
+                .show(egui_ctx, |ui| {
+                    egui::Grid::new("my_grid")
+                        .num_columns(2)
+                        .spacing([10.0, 5.0])
+                        .striped(true)
+                        .show(ui, |ui| {
+                            ui.label("Row: ");
+                            ui.add(
+                                egui::Slider::new(&mut next_row, 2..=30)
+                                    .trailing_fill(true)
+                                    .step_by(0.1),
+                            );
+                            ui.end_row();
 
-            choosen_cell = rng.gen_range(0..GRID_SIZE);
-            choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
+                            ui.label("Column: ");
+                            ui.add(
+                                egui::Slider::new(&mut next_column, 2..=30)
+                                    .trailing_fill(true)
+                                    .step_by(0.1),
+                            );
+                            ui.end_row();
 
-            grid[choosen_cell] = Cell::Collapsed(TileProp {
-                tile: choosen_cell_tile.clone(),
-                edges: cells[choosen_cell_tile].clone(),
-            });
-        }
+                            if ui.button("Generate").clicked() {
+                                row = next_row;
+                                column = next_column;
+                                grid_size = row * column;
+                                grid = vec![Cell::Options(tile_options.clone()); grid_size];
+
+                                choosen_cell = random_range(0..grid_size);
+                                choosen_cell_tile = tile_options.choose(&mut rng).unwrap();
+
+                                grid[choosen_cell] = Cell::Collapsed(TileProp {
+                                    tile: choosen_cell_tile.clone(),
+                                    edges: cells[choosen_cell_tile].clone(),
+                                });
+                            }
+                        })
+                });
+        });
 
         // ! MARK: WFC Part 1: Wave
-        wave_funtion(&mut grid, &cells);
+        wave_funtion(&mut grid, &cells, column, row);
 
         // ! MARK: Check for least option one
         let mut least_one = 0;
@@ -165,15 +204,13 @@ async fn main() {
         // ! MARK: Draw world
         set_camera(&camera);
 
-        texture_size = screen_height() / ROW as f32;
-
-        let pos_x = (COLUMN as f32 * texture_size) / 2.;
-        let pos_y = (ROW as f32 * texture_size) / 2.;
+        let pos_x = (column as f32 * TEXTURE_SIZE) / 2.;
+        let pos_y = (row as f32 * TEXTURE_SIZE) / 2.;
 
         let texture_param = DrawTextureParams {
             dest_size: Some(Vec2 {
-                x: texture_size,
-                y: texture_size,
+                x: TEXTURE_SIZE,
+                y: TEXTURE_SIZE,
             }),
             source: None,
             rotation: 0.,
@@ -183,8 +220,8 @@ async fn main() {
         };
 
         for (index, cell) in grid.iter().enumerate() {
-            let x = (index % COLUMN) as f32 * texture_size - pos_x;
-            let y = (index / COLUMN) as f32 * texture_size - pos_y;
+            let x = (index % column) as f32 * TEXTURE_SIZE - pos_x;
+            let y = (index / column) as f32 * TEXTURE_SIZE - pos_y;
 
             match cell {
                 Cell::Options(_) => {
@@ -231,46 +268,7 @@ async fn main() {
             }
         }
 
+        egui_macroquad::draw();
         next_frame().await;
-    }
-}
-
-pub fn camera_controller(camera: &mut Camera2D, zoomer: &mut Vec2) {
-    // ! window res
-    camera.zoom = vec2(
-        2. / screen_width() + zoomer.x / screen_width(),
-        2. / screen_height() + zoomer.y / screen_height(),
-    );
-    camera.target = Vec2::ZERO;
-
-    if screen_width() < 320. {
-        request_new_screen_size(320., screen_height());
-    }
-
-    if screen_height() < 240. {
-        request_new_screen_size(screen_width(), 240.);
-    }
-
-    // ! controller
-    if mouse_wheel().1 > 0. {
-        *zoomer += 0.2
-    } else if mouse_wheel().1 < 0. && zoomer.x > -1. {
-        *zoomer -= 0.2;
-    }
-
-    if camera.zoom.x < 0. {
-        camera.zoom += Vec2::new(0.1 / screen_width(), 0.1 / screen_height())
-    }
-
-    if is_mouse_button_down(MouseButton::Left) {
-        let mouse_pos = mouse_delta_position();
-
-        camera.offset.x -= mouse_pos.x;
-        camera.offset.y += mouse_pos.y;
-    }
-
-    if is_key_pressed(KeyCode::Space) {
-        camera.offset = Vec2::ZERO;
-        *zoomer = Vec2::ZERO;
     }
 }

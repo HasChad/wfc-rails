@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-macroquad = "0.4.13"
-rand = "0.8.5"
-rust-embed = { version = "8.4.0", features = ["include-exclude"] }
+macroquad = "0.4.14"
+egui-macroquad = "0.17.3"
+rand = "0.9.1"
+rust-embed = { version = "8.7.2", features = ["include-exclude"] }
 
 [build-dependencies]
 winres = "0.1.12"
